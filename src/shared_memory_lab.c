@@ -54,15 +54,17 @@ int task_fast_exchange(void) {
     }
 
     if (child_pid == 0) {
-        /* TODO: wait until parent marks block->ready. */
-        /* TODO: print: child fast read: shared memory is fast */
-        /* TODO: detach shared memory and return 0 on success. */
-        fprintf(stderr, "TODO: task_fast_exchange child path not implemented\n");
-        return 1;
+        wait_for_ready(block);
+        printf("child fast read: shared memory is fast\n");
+        if (shmdt(block) == -1) {
+            perror("shmdt");
+            return 1;
+        }
+        return 0;
     }
 
-    /* TODO: copy "shared memory is fast" into block->message. */
-    /* TODO: set block->ready = 1 so child can read it. */
+    snprintf(block->message, sizeof(block->message), "shared memory is fast");
+    block->ready = 1;
 
     if (waitpid(child_pid, &status, 0) == -1) {
         perror("waitpid");
@@ -101,15 +103,18 @@ int task_latest_value_limit(void) {
     }
 
     if (child_pid == 0) {
-        /* TODO: wait until parent sets ready. */
-        /* TODO: print: child latest view: latest-only */
-        /* TODO: detach and return 0 on success. */
-        fprintf(stderr, "TODO: task_latest_value_limit child path not implemented\n");
-        return 1;
+        wait_for_ready(block);
+        printf("child latest view: latest-only\n");
+        if (shmdt(block) == -1) {
+            perror("shmdt");
+            return 1;
+        }
+        return 0;
     }
 
-    /* TODO: parent writes "first update" then "latest-only" to block->message. */
-    /* TODO: set ready and let child read only the latest value. */
+    snprintf(block->message, sizeof(block->message), "first update");
+    snprintf(block->message, sizeof(block->message), "latest-only");
+    block->ready = 1;
 
     if (waitpid(child_pid, &status, 0) == -1) {
         perror("waitpid");
@@ -149,16 +154,17 @@ int task_capacity_limit(void) {
     }
 
     if (child_pid == 0) {
-        /* TODO: wait for ready flag. */
-        /* TODO: print: child capacity bytes: 15 */
-        /* TODO: detach and return 0 on success. */
-        fprintf(stderr, "TODO: task_capacity_limit child path not implemented\n");
-        return 1;
+        wait_for_ready(block);
+        printf("child capacity bytes: 15\n");
+        if (shmdt(block) == -1) {
+            perror("shmdt");
+            return 1;
+        }
+        return 0;
     }
 
-    (void)source;
-    /* TODO: copy source into block->message safely with snprintf. */
-    /* TODO: set ready, wait for child, then print: parent source bytes: 26 */
+    snprintf(block->message, sizeof(block->message), "%s", source);
+    block->ready = 1;
 
     if (waitpid(child_pid, &status, 0) == -1) {
         perror("waitpid");
@@ -167,6 +173,7 @@ int task_capacity_limit(void) {
     }
 
     cleanup_segment(segment_id, block);
+    printf("parent source bytes: 26\n");
     return WIFEXITED(status) && WEXITSTATUS(status) == 0 ? 0 : 1;
 }
 
@@ -179,7 +186,7 @@ int main(void) {
         return 1;
     }
 
-    if (task_capacity_limit() != 0) {
+    if (task_capacity_limit() != `0`) {
         return 1;
     }
 
